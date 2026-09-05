@@ -1,0 +1,51 @@
+timesfm-api
+Copyright 2026 Andre Parent
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+--------------------------------------------------------------------------------
+Model weights
+--------------------------------------------------------------------------------
+
+This service loads the TimesFM 3.0 weights published by Google Research at
+https://huggingface.co/google/timesfm-3.0-pytorch
+
+The weights are NOT distributed with this repository: they are downloaded at
+runtime from HuggingFace, and they carry their own separate terms --
+the "TimesFM Non-Commercial License v1.0", which restricts them to
+non-commercial, non-production use.
+
+The Apache-2.0 license of this repository covers only the code written here.
+It grants no rights whatsoever over the model weights. Anyone running this
+service is responsible for complying with Google's terms for the checkpoint
+they load. TimesFM 2.5 weights are published under Apache-2.0 and do not carry
+that restriction, but its Python API differs (`timesfm` instead of `timesfm3`).
+
+--------------------------------------------------------------------------------
+Third-party dependencies
+--------------------------------------------------------------------------------
+
+This project depends on, but does not redistribute, the following packages.
+All of them are under permissive licenses compatible with Apache-2.0:
+
+  timesfm            Apache-2.0    Google Research (library code)
+  torch              BSD-3-Clause  (with Apache-2.0 and other permissive
+                                   components; see the package's own notices)
+  numpy              BSD-3-Clause  (with 0BSD, MIT, Zlib and CC0-1.0 components)
+  fastapi            MIT
+  starlette          BSD-3-Clause
+  uvicorn            BSD-3-Clause
+  pydantic           MIT
+  pydantic-settings  MIT
+  anyio              MIT
+  huggingface-hub    Apache-2.0
+  safetensors        Apache-2.0
+
+Development-only dependencies:
+
+  pytest             MIT
+  pytest-asyncio     Apache-2.0
+  httpx              BSD-3-Clause
+  ruff               MIT
+
+None of these impose copyleft obligations on this repository.

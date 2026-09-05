@@ -199,9 +199,33 @@ natively instead.
 
 ## License
 
-The code in this repository is free to use. The TimesFM 3.0 **weights**, however, are
-distributed by Google under the *TimesFM Non-Commercial License v1.0* — **non-commercial,
-non-production use only**. The `timesfm` library code itself is Apache-2.0.
+This repository is licensed under the **[Apache License 2.0](LICENSE)**.
 
-For commercial use you would need TimesFM 2.5 (Apache-2.0 weights), whose Python API differs
-(`timesfm` instead of `timesfm3`): `app/forecaster.py` would then need a dedicated adapter.
+Apache-2.0 was chosen because it is the license of the `timesfm` library itself, it carries an
+explicit patent grant, and it is compatible with every dependency here — all of which are
+permissive (Apache-2.0, MIT, BSD-3-Clause), with no copyleft obligation:
+
+| Dependency | License |
+|---|---|
+| `timesfm` (library code) | Apache-2.0 |
+| `torch` | BSD-3-Clause, with Apache-2.0 and other permissive components |
+| `numpy` | BSD-3-Clause, with 0BSD, MIT, Zlib and CC0-1.0 components |
+| `fastapi`, `pydantic`, `pydantic-settings`, `anyio` | MIT |
+| `starlette`, `uvicorn` | BSD-3-Clause |
+| `huggingface-hub`, `safetensors` | Apache-2.0 |
+| `pytest`, `ruff` (dev) | MIT |
+| `pytest-asyncio` (dev) | Apache-2.0 |
+| `httpx` (dev) | BSD-3-Clause |
+
+### The model weights are a separate matter
+
+The TimesFM 3.0 **weights** are published by Google under the *TimesFM Non-Commercial License
+v1.0* — **non-commercial, non-production use only**. They are **not** part of this repository:
+they are downloaded from HuggingFace at runtime.
+
+The Apache-2.0 license above covers the code written here and grants no rights over those
+weights. Whoever runs this service is responsible for complying with Google's terms for the
+checkpoint they load. See [NOTICE](NOTICE).
+
+TimesFM 2.5 weights are Apache-2.0 and carry no such restriction, but its Python API differs
+(`timesfm` instead of `timesfm3`): `app/forecaster.py` would need a dedicated adapter.

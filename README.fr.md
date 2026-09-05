@@ -202,10 +202,35 @@ l'inférence y serait CPU pur, avec en plus le surcoût de la VM. Le service tou
 
 ## Licence
 
-Le code de ce dépôt est libre d'usage. En revanche, les **poids** de TimesFM 3.0 sont distribués
-par Google sous *TimesFM Non-Commercial License v1.0* — usage **non commercial et hors
-production**. Le code de la librairie `timesfm` est, lui, sous Apache-2.0.
+Ce dépôt est publié sous **[licence Apache 2.0](LICENSE)**.
 
-Pour un usage commercial, il faut se rabattre sur TimesFM 2.5 (poids Apache-2.0), dont l'API
-Python diffère (`timesfm` au lieu de `timesfm3`) : `app/forecaster.py` devrait alors recevoir un
-adaptateur dédié.
+Apache-2.0 a été retenue parce que c'est la licence de la librairie `timesfm` elle-même, qu'elle
+comporte une concession de brevets explicite, et qu'elle est compatible avec toutes les
+dépendances du projet — toutes permissives (Apache-2.0, MIT, BSD-3-Clause), sans aucune
+obligation de copyleft :
+
+| Dépendance | Licence |
+|---|---|
+| `timesfm` (code de la librairie) | Apache-2.0 |
+| `torch` | BSD-3-Clause, avec des composants Apache-2.0 et autres licences permissives |
+| `numpy` | BSD-3-Clause, avec des composants 0BSD, MIT, Zlib et CC0-1.0 |
+| `fastapi`, `pydantic`, `pydantic-settings`, `anyio` | MIT |
+| `starlette`, `uvicorn` | BSD-3-Clause |
+| `huggingface-hub`, `safetensors` | Apache-2.0 |
+| `pytest`, `ruff` (dev) | MIT |
+| `pytest-asyncio` (dev) | Apache-2.0 |
+| `httpx` (dev) | BSD-3-Clause |
+
+### Les poids du modèle sont un sujet distinct
+
+Les **poids** de TimesFM 3.0 sont publiés par Google sous *TimesFM Non-Commercial License v1.0*
+— usage **non commercial et hors production uniquement**. Ils ne font **pas** partie de ce
+dépôt : ils sont téléchargés depuis HuggingFace à l'exécution.
+
+La licence Apache-2.0 ci-dessus couvre le code écrit ici et ne confère aucun droit sur ces
+poids. Il revient à celui qui fait tourner le service de respecter les conditions de Google pour
+le checkpoint qu'il charge. Voir [NOTICE](NOTICE).
+
+Les poids de TimesFM 2.5 sont en Apache-2.0 et ne portent pas cette restriction, mais son API
+Python diffère (`timesfm` au lieu de `timesfm3`) : `app/forecaster.py` demanderait un adaptateur
+dédié.

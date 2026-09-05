@@ -3,6 +3,12 @@ name = "timesfm-api"
 version = "0.1.0"
 description = "Service REST exposant TimesFM 3.0 (Google Research) pour la prevision de series temporelles."
 requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Framework :: FastAPI",
+]
 dependencies = [
   "timesfm[torch]>=3.0.1",
   "fastapi>=0.115.0",
