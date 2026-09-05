@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Environnement
+.env
+
+# Artefacts
+openapi.json
+*.log
+
+# Poids de modeles (au cas ou HF_HOME pointe dans le projet)
+.cache/
+models/
+
+# macOS
+.DS_Store
