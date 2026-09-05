@@ -211,7 +211,7 @@ obligation de copyleft :
 
 | Dépendance | Licence |
 |---|---|
-| `timesfm` (code de la librairie) | Apache-2.0 |
+| `timesfm` (code de la librairie, module `timesfm3` inclus) | Apache-2.0 |
 | `torch` | BSD-3-Clause, avec des composants Apache-2.0 et autres licences permissives |
 | `numpy` | BSD-3-Clause, avec des composants 0BSD, MIT, Zlib et CC0-1.0 |
 | `fastapi`, `pydantic`, `pydantic-settings`, `anyio` | MIT |

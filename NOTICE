@@ -15,6 +15,11 @@ runtime from HuggingFace, and they carry their own separate terms --
 the "TimesFM Non-Commercial License v1.0", which restricts them to
 non-commercial, non-production use.
 
+Upstream is explicit about this split: the TimesFM source code is Apache-2.0,
+and so are the weights up to version 2.5; only the 3.0 pretrained weights carry
+the separate non-commercial license. See the "License notice for pretrained
+weights" section of https://github.com/google-research/timesfm
+
 The Apache-2.0 license of this repository covers only the code written here.
 It grants no rights whatsoever over the model weights. Anyone running this
 service is responsible for complying with Google's terms for the checkpoint
@@ -28,7 +33,11 @@ Third-party dependencies
 This project depends on, but does not redistribute, the following packages.
 All of them are under permissive licenses compatible with Apache-2.0:
 
-  timesfm            Apache-2.0    Google Research (library code)
+  timesfm            Apache-2.0    Google Research -- the whole library, the
+                                   `timesfm3` module included: all 16 source
+                                   files carry an Apache-2.0 header, and the
+                                   upstream repository ships the Apache-2.0
+                                   text as its LICENSE
   torch              BSD-3-Clause  (with Apache-2.0 and other permissive
                                    components; see the package's own notices)
   numpy              BSD-3-Clause  (with 0BSD, MIT, Zlib and CC0-1.0 components)

@@ -207,7 +207,7 @@ permissive (Apache-2.0, MIT, BSD-3-Clause), with no copyleft obligation:
 
 | Dependency | License |
 |---|---|
-| `timesfm` (library code) | Apache-2.0 |
+| `timesfm` (library code, `timesfm3` module included) | Apache-2.0 |
 | `torch` | BSD-3-Clause, with Apache-2.0 and other permissive components |
 | `numpy` | BSD-3-Clause, with 0BSD, MIT, Zlib and CC0-1.0 components |
 | `fastapi`, `pydantic`, `pydantic-settings`, `anyio` | MIT |
