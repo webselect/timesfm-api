@@ -34,8 +34,8 @@ router = APIRouter(prefix="/v1", tags=["forecast"])
 
 REQUEST_EXAMPLES = {
     "univarie": {
-        "summary": "Univarie",
-        "description": "Une serie simple ; `null` marque une valeur manquante.",
+        "summary": "Univariate",
+        "description": "A single series; `null` marks a missing value.",
         "value": {
             "horizon": 12,
             "return_quantiles": True,
@@ -48,9 +48,9 @@ REQUEST_EXAMPLES = {
         },
     },
     "multivarie": {
-        "summary": "Multivarie",
+        "summary": "Multivariate",
         "description": (
-            "Une entree 2-D `(variables, longueur)` active l'attention inter-variables."
+            "A 2-D `(variates, length)` input turns on cross-variate attention."
         ),
         "value": {
             "horizon": 12,
@@ -66,10 +66,10 @@ REQUEST_EXAMPLES = {
         },
     },
     "covariables": {
-        "summary": "Avec covariables",
+        "summary": "With covariates",
         "description": (
-            "La covariable future couvre le contexte plus l'horizon ; `edge` la prolonge "
-            "jusqu'au patch de 64."
+            "The future covariate covers the context plus the horizon; `edge` extends it "
+            "to the 64-step patch."
         ),
         "value": {
             "horizon": 3,
@@ -85,8 +85,8 @@ REQUEST_EXAMPLES = {
         },
     },
     "options": {
-        "summary": "Toutes les options",
-        "description": "Surface complete des options d'inference de TimesFM 3.0.",
+        "summary": "All options",
+        "description": "The complete surface of TimesFM 3.0 inference options.",
         "value": {
             "horizon": 8,
             "return_quantiles": True,
@@ -142,19 +142,19 @@ def _to_series_forecast(
 @router.post(
     "/forecast",
     response_model=ForecastResponse,
-    summary="Prevoir un lot de series",
-    responses={503: {"description": "Modele pas encore charge"}},
+    summary="Forecast a batch of series",
+    responses={503: {"description": "Model not loaded yet"}},
 )
 async def forecast(
     payload: Annotated[ForecastRequest, Body(openapi_examples=REQUEST_EXAMPLES)],
     forecaster: ForecasterDep,
     settings: SettingsDep,
 ) -> ForecastResponse:
-    """Prevoit `horizon` pas pour chaque serie du lot.
+    """Forecasts `horizon` steps for every series in the batch.
 
-    Couvre toute la surface de TimesFM 3.0 : series univariees ou multivariees (avec
-    attention inter-variables), covariables passees et futures, z-normalisation, moyenne
-    symetrique, contrainte de positivite et tri des quantiles.
+    Covers the full surface of TimesFM 3.0: univariate or multivariate series (with
+    cross-variate attention), past and future covariates, z-normalization, symmetric
+    averaging, positivity constraint and quantile sorting.
     """
     univariate_inputs = [s.is_univariate for s in payload.series]
     contexts = [
@@ -192,13 +192,13 @@ async def forecast(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=(
-                f"Le modele a renvoye {len(predictions)} previsions pour "
+                f"The model returned {len(predictions)} forecasts for "
                 f"{len(payload.series)} series."
             ),
         )
 
     logger.info(
-        "forecast series=%d horizon=%d univariate_inputs=%s duree=%.0f ms",
+        "forecast series=%d horizon=%d univariate_inputs=%s elapsed=%.0f ms",
         len(payload.series),
         payload.horizon,
         all(univariate_inputs),
@@ -222,9 +222,9 @@ async def forecast(
     )
 
 
-@router.get("/model", response_model=ModelInfo, summary="Configuration effective du modele")
+@router.get("/model", response_model=ModelInfo, summary="Effective model configuration")
 def model_info(forecaster: ForecasterDep, settings: SettingsDep) -> ModelInfo:
-    """Expose le checkpoint, le device et toutes les options figees au chargement."""
+    """Exposes the checkpoint, the device and every option frozen at load time."""
     options = settings.model_kwargs()
     options.pop("token", None)  # ne jamais renvoyer le jeton HuggingFace
     return ModelInfo(

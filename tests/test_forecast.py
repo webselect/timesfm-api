@@ -190,7 +190,7 @@ async def test_returns_503_when_model_not_loaded(app):
         loaded = False
 
         async def forecast(self, **_):
-            raise ModelNotReady("Le modele TimesFM n'est pas charge.")
+            raise ModelNotReady("The TimesFM model is not loaded.")
 
     app.dependency_overrides[get_forecaster] = NotReady
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

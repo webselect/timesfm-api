@@ -63,7 +63,7 @@ async def test_all_null_values(client):
         "/v1/forecast", json={"horizon": 2, "series": [{"values": [None, None]}]}
     )
     assert response.status_code == 422
-    assert "au moins une valeur" in _messages(response)
+    assert "at least one value" in _messages(response)
 
 
 async def test_infinite_value_is_rejected(client):
@@ -84,7 +84,7 @@ async def test_duplicate_ids(client):
         },
     )
     assert response.status_code == 422
-    assert "uniques" in _messages(response)
+    assert "must be unique" in _messages(response)
 
 
 async def test_variates_of_unequal_length(client):
@@ -93,7 +93,7 @@ async def test_variates_of_unequal_length(client):
         json={"horizon": 2, "series": [{"values": [[1.0, 2.0, 3.0], [1.0, 2.0]]}]},
     )
     assert response.status_code == 422
-    assert "meme longueur" in _messages(response)
+    assert "same length" in _messages(response)
 
 
 async def test_inconsistent_variate_count_across_batch(client):
@@ -109,7 +109,7 @@ async def test_inconsistent_variate_count_across_batch(client):
         },
     )
     assert response.status_code == 422
-    assert "meme nombre de variables" in _messages(response)
+    assert "same number of target variates" in _messages(response)
 
 
 async def test_too_many_variates(client):

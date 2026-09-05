@@ -1,73 +1,74 @@
 # timesfm-api
 
-Service REST autour de **[TimesFM 3.0](https://github.com/google-research/timesfm)** (Google
-Research) pour la prévision de séries temporelles, avec Swagger intégré.
+*[Version française](README.fr.md)*
 
-Construit pour être appelé depuis un client externe (par exemple un robot de trading en
-TypeScript) : l'API est générique, sans logique métier, et expose **toute** la surface du
-modèle.
+REST service around **[TimesFM 3.0](https://github.com/google-research/timesfm)** (Google
+Research) for time series forecasting, with built-in Swagger documentation.
+
+Built to be called from an external client — a TypeScript trading bot, for instance: the API is
+generic, carries no business logic, and exposes the **full** surface of the model.
 
 ---
 
-## Prérequis
+## Requirements
 
-- macOS Apple Silicon (testé sur M1 Pro) ou Linux
-- Python ≥ 3.10 — le projet utilise `/opt/homebrew/bin/python3.12`
-- ~1,2 Go d'espace disque pour les poids (téléchargés depuis HuggingFace au premier démarrage)
+- macOS on Apple Silicon (tested on an M1 Pro) or Linux
+- Python ≥ 3.10 — the project uses `/opt/homebrew/bin/python3.12`
+- ~1.2 GB of disk space for the weights, downloaded from HuggingFace on first start
 
-## Installation
+## Install
 
 ```bash
 make setup
 cp .env.example .env
 ```
 
-## Démarrage
+## Run
 
 ```bash
 make run
 ```
 
-Le premier lancement télécharge les poids ; les suivants démarrent en quelques secondes.
+The first start downloads the weights; later ones take a few seconds.
 
-| URL | Contenu |
+| URL | Contents |
 |---|---|
-| http://localhost:8000/docs | Swagger UI (« Try it out » utilisable directement) |
-| http://localhost:8000/redoc | Documentation ReDoc |
-| http://localhost:8000/openapi.json | Schéma OpenAPI |
+| http://localhost:8000/docs | Swagger UI (with runnable examples) |
+| http://localhost:8000/redoc | ReDoc documentation |
+| http://localhost:8000/openapi.json | OpenAPI schema |
 
 ## Endpoints
 
-| Méthode | Route | Rôle |
+| Method | Route | Purpose |
 |---|---|---|
 | `GET` | `/health` | Liveness |
-| `GET` | `/ready` | 200 si les poids sont chargés, 503 sinon |
-| `GET` | `/v1/model` | Checkpoint, device et toutes les options effectives |
-| `POST` | `/v1/forecast` | Prévision d'un lot de séries |
+| `GET` | `/ready` | 200 once the weights are loaded, 503 otherwise |
+| `GET` | `/v1/model` | Checkpoint, device and every effective option |
+| `POST` | `/v1/forecast` | Forecast a batch of series |
 
-### Exemple — univarié
-
-```bash
-curl -s localhost:8000/v1/forecast -H 'content-type: application/json' -d '{
-  "horizon": 12,
-  "series": [{"id": "ventes", "values": [12.0, 13.5, 11.2, null, 14.8, 15.1]}]
-}' | jq
-```
-
-`null` marque une valeur manquante : TimesFM interpole linéairement les trous internes.
-
-### Exemple — multivarié
-
-Une entrée 2-D `(variables, longueur)` active l'attention inter-variables de TimesFM 3.0 :
+### Example — univariate
 
 ```bash
 curl -s localhost:8000/v1/forecast -H 'content-type: application/json' -d '{
   "horizon": 12,
-  "series": [{"id": "capteurs", "values": [[1.0, 1.2, 1.4], [8.0, 7.6, 7.9]]}]
+  "series": [{"id": "sales", "values": [12.0, 13.5, 11.2, null, 14.8, 15.1]}]
 }' | jq
 ```
 
-### Exemple — covariables
+`null` marks a missing value: TimesFM linearly interpolates internal gaps.
+
+### Example — multivariate
+
+A 2-D input `(variates, length)` turns on TimesFM 3.0's cross-variate attention:
+
+```bash
+curl -s localhost:8000/v1/forecast -H 'content-type: application/json' -d '{
+  "horizon": 12,
+  "series": [{"id": "sensors", "values": [[1.0, 1.2, 1.4], [8.0, 7.6, 7.9]]}]
+}' | jq
+```
+
+### Example — covariates
 
 ```bash
 curl -s localhost:8000/v1/forecast -H 'content-type: application/json' -d '{
@@ -81,88 +82,85 @@ curl -s localhost:8000/v1/forecast -H 'content-type: application/json' -d '{
 }' | jq
 ```
 
-Une covariable future couvre le contexte **plus** l'horizon. Comme le modèle arrondit l'horizon
-au multiple de 64 supérieur, `padding_mode: "edge"` prolonge la dernière valeur jusqu'à ce
-patch ; l'API l'applique automatiquement si vous ne précisez rien, et le signale dans
-`applied_options`.
+A future covariate covers the context **plus** the horizon. Since the model rounds the horizon
+up to the next multiple of 64, `padding_mode: "edge"` extends the last value to that patch; the
+API applies it automatically when you leave it unset, and reports it under `applied_options`.
 
-### Forme des réponses
+### Response shape
 
-La sortie reflète l'entrée :
+The output mirrors the input:
 
-| Entrée | `point` | `quantiles[niveau]` |
+| Input | `point` | `quantiles[level]` |
 |---|---|---|
-| `values` 1-D | `[horizon]` | `[horizon]` |
-| `values` 2-D `(V, L)` | `[V][horizon]` | `[V][horizon]` |
+| 1-D `values` | `[horizon]` | `[horizon]` |
+| 2-D `values` `(V, L)` | `[V][horizon]` | `[V][horizon]` |
 
-Les 9 quantiles vont de `0.1` à `0.9` ; `point` est la médiane. Une valeur non finie renvoyée
-par le modèle apparaît en `null`.
+The 9 quantiles run from `0.1` to `0.9`; `point` is the median. A non-finite value returned by
+the model comes back as `null`.
 
-## Couverture de TimesFM 3.0
+## TimesFM 3.0 coverage
 
-Toute la surface du modèle est atteignable via l'API :
+Every capability of the model is reachable through the API:
 
-| Capacité TimesFM | Exposition |
+| TimesFM capability | Exposed as |
 |---|---|
-| Prévision univariée | `values` 1-D |
-| Prévision multivariée (attention inter-variables) | `values` 2-D |
-| Covariables passées | `past_only_covariates` |
-| Covariables passées **et** futures | `past_future_covariates` |
-| Quantiles (9 niveaux) | `return_quantiles` |
-| Z-normalisation | `options.use_znorm` |
-| Moyenne symétrique | `options.use_symmetric_averaging` |
-| Contrainte de positivité | `options.make_positive` |
-| Tri des quantiles | `options.sort_quantiles` |
-| Mode univarié (déroulage des variables) | `options.univariate` |
-| Padding des covariables futures | `options.padding_mode` |
-| Découpage automatique au-delà de 32 variables | automatique |
-| Identifiants de séries | `id` |
-| Interpolation des valeurs manquantes | `null` dans `values` |
-| Options de construction du modèle (`use_stitching`, `use_linear_detrending`, `use_iterative_cpm_revin`, `use_variate_attention`, `input_transform`, `value_clip`, …) | variables `TIMESFM_*`, visibles sur `/v1/model` |
+| Univariate forecasting | 1-D `values` |
+| Multivariate forecasting (cross-variate attention) | 2-D `values` |
+| Past-only covariates | `past_only_covariates` |
+| Past **and** future covariates | `past_future_covariates` |
+| Quantiles (9 levels) | `return_quantiles` |
+| Z-normalization | `options.use_znorm` |
+| Symmetric averaging | `options.use_symmetric_averaging` |
+| Positivity constraint | `options.make_positive` |
+| Quantile sorting | `options.sort_quantiles` |
+| Univariate mode (unrolls variates) | `options.univariate` |
+| Future-covariate padding | `options.padding_mode` |
+| Automatic chunking beyond 32 variates | automatic |
+| Series identifiers | `id` |
+| Missing-value interpolation | `null` inside `values` |
+| Model construction options (`use_stitching`, `use_linear_detrending`, `use_iterative_cpm_revin`, `use_variate_attention`, `input_transform`, `value_clip`, …) | `TIMESFM_*` variables, reported by `/v1/model` |
 
-Ces dernières construisent le modèle et ne peuvent donc pas varier d'une requête à l'autre :
-elles se règlent au démarrage.
+Those last options build the model itself, so they cannot vary per request: set them at startup.
 
-**Non couvert** : le backend Flax/JAX (extras `flax` et `xreg`, qui tirent `jax[cuda]`) —
-inutilisable sur Apple Silicon. Le backend PyTorch offre les mêmes fonctionnalités pour la 3.0.
+**Not covered**: the Flax/JAX backend (the `flax` and `xreg` extras, which pull in `jax[cuda]`) —
+unusable on Apple Silicon. The PyTorch backend offers the same features for 3.0.
 
-## Limites du modèle
+## Model limits
 
-| Paramètre | Valeur |
+| Parameter | Value |
 |---|---|
-| Contexte maximum | 15 360 points (au-delà, tronqué à gauche par le modèle) |
-| Patch d'entrée / de sortie | 32 / 64 |
-| Variables par passe | 32 (découpage automatique au-delà) |
+| Maximum context | 15,360 points (longer inputs are truncated from the left by the model) |
+| Input / output patch | 32 / 64 |
+| Variates per forward pass | 32 (chunked automatically beyond that) |
 | Quantiles | 0.1 … 0.9 |
 
-Garde-fous côté API, ajustables : `API_MAX_SERIES` (32), `API_MAX_HORIZON` (1024),
+API-side guardrails, all adjustable: `API_MAX_SERIES` (32), `API_MAX_HORIZON` (1024),
 `API_MAX_VARIATES` (64).
 
 ## Configuration
 
-Toutes les options sont dans [`.env.example`](.env.example). Les principales :
+Every option lives in [`.env.example`](.env.example). The main ones:
 
-| Variable | Défaut | Rôle |
+| Variable | Default | Purpose |
 |---|---|---|
-| `TIMESFM_CHECKPOINT` | `google/timesfm-3.0-pytorch` | Modèle chargé |
-| `TIMESFM_DEVICE` | `auto` | `auto` → `mps` sur Apple Silicon, sinon `cuda`, sinon `cpu` |
-| `TIMESFM_PER_CORE_BATCH_SIZE` | `4` | Taille de lot interne |
-| `API_PRELOAD` | `true` | Charger les poids au démarrage plutôt qu'à la première requête |
-| `PYTORCH_ENABLE_MPS_FALLBACK` | `1` | Bascule sur CPU les opérations non implémentées en Metal |
+| `TIMESFM_CHECKPOINT` | `google/timesfm-3.0-pytorch` | Model to load |
+| `TIMESFM_DEVICE` | `auto` | `auto` → `mps` on Apple Silicon, else `cuda`, else `cpu` |
+| `TIMESFM_PER_CORE_BATCH_SIZE` | `4` | Internal batch size |
+| `API_PRELOAD` | `true` | Load the weights at startup rather than on first request |
+| `PYTORCH_ENABLE_MPS_FALLBACK` | `1` | Route operations Metal does not implement to the CPU |
 
-Si l'initialisation sur `mps` échoue, le service se rabat automatiquement sur le CPU et le
-signale dans les logs.
+If initialization on `mps` fails, the service falls back to the CPU and says so in the logs.
 
-### Latence mesurée (M1 Pro, 32 Go)
+### Measured latency (M1 Pro, 32 GB)
 
-Contexte de 512 points, horizon 64, une série :
+512-point context, horizon 64, one series:
 
-| Device | Chargement | Inférence |
+| Device | Load | Inference |
 |---|---|---|
-| `mps` | 1,4 s | ~80 ms |
-| `cpu` | 2,2 s | ~130 ms |
+| `mps` | 1.4 s | ~80 ms |
+| `cpu` | 2.2 s | ~130 ms |
 
-L'inférence est sérialisée par un sémaphore : une rafale de requêtes ne sature pas le GPU.
+Inference is serialized behind a semaphore, so a burst of requests cannot saturate the GPU.
 
 ## Tests
 
@@ -170,40 +168,40 @@ L'inférence est sérialisée par un sémaphore : une rafale de requêtes ne sat
 make test
 ```
 
-38 tests, sans téléchargement de poids : le modèle est remplacé par un double qui vérifie que
-chaque option est bien transmise à `predict_batch`.
+38 tests, no weights downloaded: the model is replaced by a double that checks every option
+reaches `predict_batch`.
 
 ```bash
 make test-model
 ```
 
-Tests d'intégration avec les vrais poids : formes de sortie univariée et multivariée, ordre des
-quantiles, covariables futures, découpage au-delà de 32 variables, mode univarié.
+Integration tests against the real weights: univariate and multivariate output shapes, quantile
+ordering, future covariates, chunking beyond 32 variates, univariate mode.
 
 ```bash
 make lint
 ```
 
-## Client TypeScript
+## TypeScript client
 
-Le schéma OpenAPI permet de générer un client typé pour le consommateur :
+The OpenAPI schema generates a typed client for the consumer:
 
 ```bash
 make openapi
 npx openapi-typescript openapi.json -o src/timesfm-api.d.ts
 ```
 
-## Notes d'exécution
+## Runtime notes
 
-**Docker n'est pas utilisé.** Docker Desktop sur Apple Silicon ne donne pas accès au GPU Metal :
-l'inférence y serait CPU pur, avec en plus le surcoût de la VM. Le service tourne donc en natif.
+**Docker is not used.** Docker Desktop on Apple Silicon has no access to the Metal GPU, so
+inference inside a container would be CPU-only, on top of the VM overhead. The service runs
+natively instead.
 
-## Licence
+## License
 
-Le code de ce dépôt est libre d'usage. En revanche, les **poids** de TimesFM 3.0 sont distribués
-par Google sous *TimesFM Non-Commercial License v1.0* — usage **non commercial et hors
-production**. Le code de la librairie `timesfm` est, lui, sous Apache-2.0.
+The code in this repository is free to use. The TimesFM 3.0 **weights**, however, are
+distributed by Google under the *TimesFM Non-Commercial License v1.0* — **non-commercial,
+non-production use only**. The `timesfm` library code itself is Apache-2.0.
 
-Pour un usage commercial, il faut se rabattre sur TimesFM 2.5 (poids Apache-2.0), dont l'API
-Python diffère (`timesfm` au lieu de `timesfm3`) : `app/forecaster.py` devrait alors recevoir un
-adaptateur dédié.
+For commercial use you would need TimesFM 2.5 (Apache-2.0 weights), whose Python API differs
+(`timesfm` instead of `timesfm3`): `app/forecaster.py` would then need a dedicated adapter.

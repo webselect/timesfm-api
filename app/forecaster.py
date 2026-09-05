@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelNotReady(RuntimeError):
-    """Le modele n'est pas encore charge."""
+    """The model is not loaded yet."""
 
 
 @dataclass(frozen=True)
@@ -112,7 +112,7 @@ class TimesFMForecaster:
             if self._device == "cpu":
                 raise
             logger.warning(
-                "Chargement de TimesFM sur '%s' impossible, repli sur le CPU.",
+                "Could not load TimesFM on '%s', falling back to the CPU.",
                 self._device,
                 exc_info=True,
             )
@@ -120,7 +120,7 @@ class TimesFMForecaster:
             self._model = TimesFM3Evaluator(ModelConfig(device="cpu", **kwargs))
 
         logger.info(
-            "TimesFM charge (%s) sur %s en %.1f s",
+            "TimesFM loaded (%s) on %s in %.1f s",
             self._settings.timesfm_checkpoint,
             self._device,
             time.perf_counter() - started,
@@ -143,7 +143,7 @@ class TimesFMForecaster:
         padding_mode: str,
     ) -> list[Prediction]:
         if self._model is None:
-            raise ModelNotReady("Le modele TimesFM n'est pas charge.")
+            raise ModelNotReady("The TimesFM model is not loaded.")
 
         def run() -> list[Prediction]:
             outputs = self._model.predict_batch(

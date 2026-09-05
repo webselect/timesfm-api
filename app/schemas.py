@@ -3,6 +3,9 @@
 La validation reproduit fidelement les contraintes de TimesFM 3.0 (longueur de contexte,
 alignement des covariables, homogeneite du nombre de variables) afin de renvoyer un 422
 explicite plutot que de laisser echouer la librairie au milieu de l'inference.
+
+Les textes exposes (docstrings de modeles, `description`, messages d'erreur) sont en anglais :
+ils constituent la documentation publique de l'API.
 """
 
 from __future__ import annotations
@@ -28,33 +31,29 @@ Multivariate = list[list[Value]]
 
 
 class SeriesInput(BaseModel):
-    """Une serie a prevoir, univariee (`values` 1-D) ou multivariee (`values` 2-D)."""
+    """A series to forecast, univariate (1-D `values`) or multivariate (2-D `values`)."""
 
     model_config = ConfigDict(extra="forbid")
 
     id: str | None = Field(
         default=None,
-        description="Identifiant libre, repris tel quel dans la reponse.",
+        description="Free-form identifier, echoed back in the response.",
     )
     values: Univariate | Multivariate = Field(
         description=(
-            "Historique. Soit une liste de nombres (univarie), soit une liste de listes "
-            "de meme longueur (multivarie, `(variables, longueur)`) : dans ce cas TimesFM "
-            "applique son attention inter-variables. `null` marque une valeur manquante, "
-            "interpolee lineairement par le modele."
+            "History. Either a list of numbers (univariate) or a list of equal-length lists "
+            "(multivariate, `(variates, length)`), in which case TimesFM applies its "
+            "cross-variate attention. `null` marks a missing value, linearly interpolated "
+            "by the model."
         ),
     )
     past_only_covariates: Multivariate | None = Field(
         default=None,
-        description=(
-            "Covariables connues uniquement sur le passe, `(n, longueur_du_contexte)`."
-        ),
+        description="Covariates known over the past only, `(n, context_length)`.",
     )
     past_future_covariates: Multivariate | None = Field(
         default=None,
-        description=(
-            "Covariables connues aussi sur le futur, `(n, longueur_du_contexte + horizon)`."
-        ),
+        description="Covariates known over the future too, `(n, context_length + horizon)`.",
     )
 
     @property
@@ -82,30 +81,29 @@ class SeriesInput(BaseModel):
         label = f"series '{self.id}'" if self.id else "series"
 
         if not self.values:
-            raise ValueError(f"{label}: `values` ne peut pas etre vide.")
+            raise ValueError(f"{label}: `values` cannot be empty.")
 
         rows = self.rows
         if any(len(row) == 0 for row in rows):
-            raise ValueError(f"{label}: aucune variable ne peut etre vide.")
+            raise ValueError(f"{label}: no variate can be empty.")
 
         length = len(rows[0])
         if any(len(row) != length for row in rows):
             raise ValueError(
-                f"{label}: toutes les variables doivent avoir la meme longueur "
-                f"(attendu {length})."
+                f"{label}: every variate must have the same length (expected {length})."
             )
         if length > MAX_CONTEXT_LENGTH:
             raise ValueError(
-                f"{label}: contexte de {length} points, maximum {MAX_CONTEXT_LENGTH} "
-                "pour TimesFM 3.0."
+                f"{label}: context of {length} points, maximum {MAX_CONTEXT_LENGTH} "
+                "for TimesFM 3.0."
             )
         if len(rows) > settings.api_max_variates:
             raise ValueError(
-                f"{label}: {len(rows)} variables cibles, maximum "
+                f"{label}: {len(rows)} target variates, maximum "
                 f"{settings.api_max_variates} (API_MAX_VARIATES)."
             )
         if all(v is None for row in rows for v in row):
-            raise ValueError(f"{label}: au moins une valeur doit etre renseignee.")
+            raise ValueError(f"{label}: at least one value must be provided.")
 
         for name, cov in (
             ("past_only_covariates", self.past_only_covariates),
@@ -114,58 +112,58 @@ class SeriesInput(BaseModel):
             if cov is None:
                 continue
             if not cov:
-                raise ValueError(f"{label}: `{name}` fourni mais vide.")
+                raise ValueError(f"{label}: `{name}` was provided but is empty.")
             if any(len(row) == 0 for row in cov):
-                raise ValueError(f"{label}: `{name}` contient une covariable vide.")
+                raise ValueError(f"{label}: `{name}` contains an empty covariate.")
             if len({len(row) for row in cov}) != 1:
                 raise ValueError(
-                    f"{label}: toutes les covariables de `{name}` doivent avoir la meme longueur."
+                    f"{label}: every covariate in `{name}` must have the same length."
                 )
 
         if self.past_only_covariates is not None:
             cov_len = len(self.past_only_covariates[0])
             if cov_len != length:
                 raise ValueError(
-                    f"{label}: `past_only_covariates` doit couvrir exactement le contexte "
-                    f"({length} points), recu {cov_len}."
+                    f"{label}: `past_only_covariates` must cover exactly the context "
+                    f"({length} points), got {cov_len}."
                 )
 
         return self
 
 
 class ForecastOptions(BaseModel):
-    """Options d'inference, transmises telles quelles a `predict_batch`."""
+    """Inference options, passed through to `predict_batch` as-is."""
 
     model_config = ConfigDict(extra="forbid")
 
     univariate: bool = Field(
         default=False,
         description=(
-            "Traite chaque variable d'une serie multivariee independamment, sans attention "
-            "inter-variables (mode d'evaluation de TimesFM3Evaluator)."
+            "Treat each variate of a multivariate series independently, without "
+            "cross-variate attention (TimesFM3Evaluator's evaluation mode)."
         ),
     )
     use_znorm: bool = Field(
         default=False,
-        description="Z-normalise chaque variable avant l'inference, puis denormalise la sortie.",
+        description="Z-normalize each variate before inference, then denormalize the output.",
     )
     use_symmetric_averaging: bool = Field(
         default=False,
-        description="Moyenne la prevision avec celle de la serie inversee (reduit le biais).",
+        description="Average the forecast with the one of the flipped series (reduces bias).",
     )
     make_positive: bool = Field(
         default=False,
-        description="Force la prevision a rester >= 0 si le contexte est lui-meme non negatif.",
+        description="Clamp the forecast to >= 0 when the context itself is non-negative.",
     )
     sort_quantiles: bool = Field(
         default=True,
-        description="Trie les quantiles pour eviter les croisements (q10 <= q50 <= q90).",
+        description="Sort quantiles to avoid crossings (q10 <= q50 <= q90).",
     )
     padding_mode: Literal["none", "edge"] | None = Field(
         default=None,
         description=(
-            "Traitement des covariables futures quand l'horizon n'est pas un multiple de 64. "
-            "`edge` prolonge la derniere valeur ; laisser vide pour un choix automatique."
+            "How future covariates are handled when the horizon is not a multiple of 64. "
+            "`edge` extends the last value; leave unset for automatic selection."
         ),
     )
 
@@ -173,11 +171,11 @@ class ForecastOptions(BaseModel):
 class ForecastRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    horizon: int = Field(ge=1, description="Nombre de pas a prevoir.")
+    horizon: int = Field(ge=1, description="Number of steps to forecast.")
     return_quantiles: bool = Field(
-        default=True, description="Renvoyer les 9 quantiles en plus de la prevision mediane."
+        default=True, description="Return the 9 quantiles alongside the median forecast."
     )
-    series: list[SeriesInput] = Field(min_length=1, description="Series a prevoir, en lot.")
+    series: list[SeriesInput] = Field(min_length=1, description="Series to forecast, as a batch.")
     options: ForecastOptions = Field(default_factory=ForecastOptions)
 
     @property
@@ -206,7 +204,7 @@ class ForecastRequest(BaseModel):
 
         if self.horizon > settings.api_max_horizon:
             raise ValueError(
-                f"`horizon` de {self.horizon}, maximum {settings.api_max_horizon} "
+                f"`horizon` of {self.horizon}, maximum {settings.api_max_horizon} "
                 "(API_MAX_HORIZON)."
             )
         if len(self.series) > settings.api_max_series:
@@ -216,14 +214,14 @@ class ForecastRequest(BaseModel):
 
         ids = [s.id for s in self.series if s.id is not None]
         if len(ids) != len(set(ids)):
-            raise ValueError("Les identifiants de series doivent etre uniques.")
+            raise ValueError("Series identifiers must be unique.")
 
         # TimesFM exige le meme nombre de variables cibles pour tout le lot.
         variates = {s.variates for s in self.series}
         if len(variates) > 1:
             raise ValueError(
-                "Toutes les series d'un meme lot doivent avoir le meme nombre de variables "
-                f"cibles ; recu {sorted(variates)}. Envoyez-les en requetes separees."
+                "Every series in a batch must have the same number of target variates; "
+                f"got {sorted(variates)}. Send them as separate requests."
             )
 
         # Les covariables futures doivent couvrir le contexte plus la partie future.
@@ -236,31 +234,30 @@ class ForecastRequest(BaseModel):
             if future_len not in allowed:
                 label = f"series '{s.id}'" if s.id else "series"
                 raise ValueError(
-                    f"{label}: `past_future_covariates` doit couvrir le contexte "
-                    f"({s.context_length}) plus {self.horizon} (horizon) ou "
-                    f"{self.global_horizon} (horizon arrondi au patch de 64) pas, "
-                    f"soit {s.context_length + self.horizon} ou "
-                    f"{s.context_length + self.global_horizon} points ; recu {cov_len}."
+                    f"{label}: `past_future_covariates` must cover the context "
+                    f"({s.context_length}) plus either {self.horizon} (horizon) or "
+                    f"{self.global_horizon} (horizon rounded up to the 64-step patch), "
+                    f"that is {s.context_length + self.horizon} or "
+                    f"{s.context_length + self.global_horizon} points; got {cov_len}."
                 )
 
         return self
 
 
 class SeriesForecast(BaseModel):
-    """Prevision d'une serie. La forme reflete celle de l'entree."""
+    """Forecast for one series. Its shape mirrors the input."""
 
     id: str | None = None
-    variates: int = Field(description="Nombre de variables cibles previstes.")
+    variates: int = Field(description="Number of forecast target variates.")
     point: Univariate | Multivariate = Field(
         description=(
-            "Prevision mediane : `[horizon]` pour une entree univariee, "
-            "`[variables][horizon]` pour une entree multivariee. Une valeur non finie "
-            "renvoyee par le modele apparait en `null`."
+            "Median forecast: `[horizon]` for a univariate input, `[variates][horizon]` for "
+            "a multivariate one. A non-finite value returned by the model appears as `null`."
         )
     )
     quantiles: dict[str, Univariate | Multivariate] | None = Field(
         default=None,
-        description="Quantiles 0.1 a 0.9, meme forme que `point`. Absent si non demande.",
+        description="Quantiles 0.1 to 0.9, same shape as `point`. Absent when not requested.",
     )
 
 
@@ -272,7 +269,7 @@ class ForecastResponse(BaseModel):
     horizon: int
     elapsed_ms: float
     applied_options: dict = Field(
-        description="Options reellement transmises au modele, apres resolution des defauts."
+        description="Options actually passed to the model, once defaults are resolved."
     )
     forecasts: list[SeriesForecast]
 
@@ -289,7 +286,7 @@ class ModelInfo(BaseModel):
     output_patch_length: int
     max_variates_per_forward: int
     model_options: dict = Field(
-        description="Options de construction du modele, figees au chargement."
+        description="Model construction options, frozen at load time."
     )
     api_limits: dict
 

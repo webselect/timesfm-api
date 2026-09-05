@@ -21,20 +21,18 @@ logging.basicConfig(
 logger = logging.getLogger("timesfm-api")
 
 DESCRIPTION = """
-Service REST autour de **TimesFM 3.0** (Google Research) pour la prevision de series
-temporelles.
+REST service around **TimesFM 3.0** (Google Research) for time series forecasting.
 
-Toute la surface du modele est exposee : series univariees ou multivariees (avec attention
-inter-variables), covariables passees et futures, z-normalisation, moyenne symetrique,
-contrainte de positivite, tri des quantiles et mode univarie. Les series comportant plus de
-32 variables au total sont automatiquement decoupees par le modele.
+The full surface of the model is exposed: univariate or multivariate series (with
+cross-variate attention), past and future covariates, z-normalization, symmetric averaging,
+positivity constraint, quantile sorting and univariate mode. Series carrying more than 32
+variates in total are chunked automatically by the model.
 
-Les 9 quantiles renvoyes vont de 0.1 a 0.9 ; `point` correspond a la mediane.
+The 9 returned quantiles run from 0.1 to 0.9; `point` is the median.
 
-> Les poids de TimesFM 3.0 sont distribues sous *TimesFM Non-Commercial License v1.0*
-> (usage non commercial et hors production).
+> The TimesFM 3.0 weights are distributed under the *TimesFM Non-Commercial License v1.0*
+> (non-commercial, non-production use).
 """
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,13 +40,13 @@ async def lifespan(app: FastAPI):
     app.state.forecaster = TimesFMForecaster(settings)
     if settings.api_preload:
         logger.info(
-            "Chargement de %s sur %s...",
+            "Loading %s on %s...",
             settings.timesfm_checkpoint,
             app.state.forecaster.device,
         )
         app.state.forecaster.load()
     else:
-        logger.info("API_PRELOAD=false : le modele sera charge a la premiere requete.")
+        logger.info("API_PRELOAD=false: the model will load on the first request.")
     yield
 
 
@@ -58,7 +56,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description=DESCRIPTION,
         lifespan=lifespan,
-        license_info={"name": "Voir README (poids sous licence non commerciale)"},
+        license_info={"name": "See README (weights under a non-commercial license)"},
     )
 
     @app.exception_handler(RequestValidationError)
@@ -68,7 +66,7 @@ def create_app() -> FastAPI:
             content={
                 "error": {
                     "code": "validation_error",
-                    "message": "Requete invalide.",
+                    "message": "Invalid request.",
                     "details": [
                         {"loc": list(e.get("loc", [])), "msg": e.get("msg", "")}
                         for e in exc.errors()
